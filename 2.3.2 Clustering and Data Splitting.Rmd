@@ -1,0 +1,149 @@
+---
+title: "k-means"
+author: "Zhijun LIu"
+date: "2019/4/20"
+output: html_document
+---
+```{r}
+fifa_cluster = read.csv("fifa.csv")
+```
+
+fifa_cluster for clustering       
+```{r}
+library(stringr)
+fifa_cluster$Preferred.Foot <- gsub("Left",0,fifa_cluster$Preferred.Foot)
+fifa_cluster$Preferred.Foot <- gsub("Right",1,fifa_cluster$Preferred.Foot)
+fifa_cluster$Preferred.Foot = as.factor(fifa_cluster$Preferred.Foot)
+fifa_cluster$Body.Type <- gsub("Lean",1,fifa_cluster$Body.Type)
+fifa_cluster$Body.Type <- gsub("Normal",2,fifa_cluster$Body.Type)
+fifa_cluster$Body.Type <- gsub("Stocky",3,fifa_cluster$Body.Type)
+fifa_cluster$Body.Type = as.factor(fifa_cluster$Body.Type)
+fifa_cluster$attack_Work.Rate = factor(fifa_cluster$attack_Work.Rate,labels = c(3,1,2))
+fifa_cluster$defend_Work.Rate = factor(fifa_cluster$defend_Work.Rate,labels = c(3,1,2))
+
+```
+```{r}
+fifa_cluster
+```
+
+
+
+```{r}
+fifa<-fifa_cluster[,-which(names(fifa_cluster)%in%c("ID","Club","Nationality","Name","Value","Wage","International.Reputation","Real.Face","Jersey.Number","Joined","Contract.Valid.Until","Release.Clause","Position"))]
+```
+
+
+```{r}
+library(tidyverse)
+library(scales)
+library(ggthemes)
+library(kableExtra)
+library(plotly)
+library(ggplot2)
+library(dplyr)
+library(plyr)
+library(ggplot2)
+```
+
+```{r}
+within_ss = sapply(1:10,FUN = function(x) kmeans(x = fifa,centers = x,iter.max = 10000,nstart = 25)$tot.withinss)
+p1 = ggplot(data=data.frame(cluster = 1:10,within_ss),aes(x=cluster,y=within_ss))+
+  geom_line(col='steelblue',size=1.2)+
+  geom_point()+
+  scale_x_continuous(breaks=seq(1,10,1))
+```
+
+```{r}
+ratio_ss = sapply(1:10,FUN = function(x) {km = kmeans(x = fifa,centers = x,iter.max = 10000,nstart = 25) 
+km$betweenss/km$totss})
+
+
+p2 = ggplot(data=data.frame(cluster = 1:10,ratio_ss),aes(x=cluster,y=ratio_ss))+
+  geom_line(col='steelblue',size=1.2)+
+  geom_point()+
+  scale_x_continuous(breaks=seq(1,10,1))
+```
+
+```{r}
+library(cowplot)
+```
+
+```{r}
+plot_grid(p1,p2)
+```
+
+
+```{r}
+fifa_cluster
+```
+
+```{r}
+set.seed(100)
+km = kmeans(x = fifa,centers = 3,iter.max=10000,nstart=25)
+```
+
+```{r}
+fifa_cluster = read.csv("fifa.csv")
+library(stringr)
+fifa_cluster$Preferred.Foot <- gsub("Left",0,fifa_cluster$Preferred.Foot)
+fifa_cluster$Preferred.Foot <- gsub("Right",1,fifa_cluster$Preferred.Foot)
+fifa_cluster$Preferred.Foot = as.factor(fifa_cluster$Preferred.Foot)
+fifa_cluster$Body.Type <- gsub("Lean",1,fifa_cluster$Body.Type)
+fifa_cluster$Body.Type <- gsub("Normal",2,fifa_cluster$Body.Type)
+fifa_cluster$Body.Type <- gsub("Stocky",3,fifa_cluster$Body.Type)
+fifa_cluster$Body.Type = as.factor(fifa_cluster$Body.Type)
+fifa_cluster$attack_Work.Rate = factor(fifa_cluster$attack_Work.Rate,labels = c(3,1,2))
+fifa_cluster$defend_Work.Rate = factor(fifa_cluster$defend_Work.Rate,labels = c(3,1,2))
+```
+
+```{r}
+fifa_cluster<-fifa_cluster[,-which(names(fifa_cluster)%in%c("ID","Club","Nationality","Name","Real.Face","Jersey.Number","Joined","Contract.Valid.Until"))]
+```
+
+```{r}
+positions<-unique(fifa_cluster$Position)
+gk<-'GK'
+defs<-positions[str_detect(positions,'B$')]
+mids<-positions[str_detect(positions,'M$')]
+f1<-positions[str_detect(positions,'F$')]
+f2<-positions[str_detect(positions,'S$')]
+f3<-positions[str_detect(positions,'T$')]
+f4<-positions[str_detect(positions,'W$')]
+fwds <- c(as.character(f1), as.character(f2), as.character(f3), as.character(f4))
+fifa1<-fifa_cluster%>%mutate(PositionGroup=ifelse(Position %in% gk,'GK',ifelse(Position %in% defs,'DEF',ifelse(Position %in% mids,'MID',ifelse(Position %in% fwds,'FWD','Unknown')))))
+fifa1$PositionGroup = as.factor(fifa1$PositionGroup)
+```
+
+```{r}
+fifa0<-fifa1[,-which(names(fifa1)%in%c("Position"))]
+```
+
+
+```{r}
+fifa0$cluster = km$cluster
+```
+
+
+```{r}
+write.csv(fifa0, 'fifa_cluster3_total.csv',row.names = F)
+```
+
+
+```{r}
+fifa_1 = filter( fifa0, cluster==1)
+write.csv(fifa_1, 'fifa_cluster3_1.csv',row.names = F)
+```
+
+```{r}
+fifa_2 = filter( fifa0, cluster==2)
+write.csv(fifa_2, 'fifa_cluster3_2.csv',row.names = F)
+```
+
+```{r}
+fifa_3 = filter( fifa0, cluster==3)
+write.csv(fifa_3, 'fifa_cluster3_3.csv',row.names = F)
+```
+
+```{r}
+
+```

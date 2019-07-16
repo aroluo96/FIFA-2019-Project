@@ -1,0 +1,314 @@
+---
+title: "Skill set insight and replacement recommendation"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Skill insight 
+##Load Data
+```{r}
+setwd("D:/×ÊÁÏ/Columbia/Coursework/Framework 2/Assignment/Own Project/FiFA")
+# load three Cluster Data
+fifa3_1 = read.csv('3 cluster/fifa_1_Groupcluster.csv')
+fifa3_2 = read.csv('3 cluster/fifa_2_Groupcluster.csv')
+fifa3_3 = read.csv('3 cluster/fifa_2_Groupcluster.csv')
+fifa3 = read.csv('3 cluster/fifa_total_Groupcluster.csv')
+#load two cluster data
+fifa2_1 =read.csv('2 cluster/fifa_cluster2_1.csv')
+fifa2_2 =read.csv('2 cluster/fifa_cluster2_2.csv')
+fifa2 = read.csv('2 cluster/fifa_cluster2_total.csv')
+fifa = read.csv('fifa_total.csv')
+```
+
+##Data Preparation
+Select relevant variables to do prediction
+```{r}
+#Choose related variables
+fifa3_1_model <- fifa3_1[,-which(names(fifa3_1)%in%c('ID','Name','Overall','Value','Wage','Real.Face','Jersey.Number','Joined','Contract.Valid.Until','cluster','Position','Release.Clause','International.Reputation'))]
+fifa3_2_model <- fifa3_2[,-which(names(fifa3_2)%in%c('ID','Name','Overall','Value','Wage','Real.Face','Jersey.Number','Joined','Contract.Valid.Until','cluster','Position','Release.Clause','International.Reputation'))]
+fifa3_3_model <-fifa3_3[,-which(names(fifa3_3)%in%c('ID','Name','Overall','Value','Wage','Real.Face','Jersey.Number','Joined','Contract.Valid.Until','cluster','Position','Release.Clause','International.Reputation'))]
+fifa2_1_model <-fifa2_1[,-which(names(fifa2_1)%in%c('ID','Name','Overall','Value','Wage','Real.Face','Jersey.Number','Joined','Contract.Valid.Until','cluster','Position','Release.Clause','International.Reputation'))]
+fifa2_2_model <-fifa2_2[,-which(names(fifa2_2)%in%c('ID','Name','Overall','Value','Wage','Real.Face','Jersey.Number','Joined','Contract.Valid.Until','cluster','Position','Release.Clause','International.Reputation'))]
+fifa3model <- fifa3[,-which(names(fifa3)%in%c('ID','Name','Overall','Value','Wage','Real.Face','Jersey.Number','Joined','Contract.Valid.Until','cluster','Position','Release.Clause','International.Reputation'))]
+fifa2model <- fifa2[,-which(names(fifa2)%in%c('ID','Name','Overall','Value','Wage','Real.Face','Jersey.Number','Joined','Contract.Valid.Until','cluster','Position','Release.Clause','International.Reputation'))]
+```
+Dummy the PositionGroup variables
+```{r}
+library(psych)
+dummy_position3 <-dummy.code(fifa3$PositionGroup)
+dummy_position2 <-dummy.code(fifa2$PositionGroup)
+dummy_position3_1 <- dummy.code(fifa3_1_model$PositionGroup)
+dummy_position3_2 <-dummy.code(fifa3_2_model$PositionGroup)
+dummy_position3_3 <-dummy.code(fifa3_3_model$PositionGroup)
+dummy_position2_1 <-dummy.code(fifa2_1_model$PositionGroup)
+dummy_position2_2 <-dummy.code(fifa2_2_model$PositionGroup)
+```
+combine the dummy variables with the original data set
+```{r}
+fifa3_1_model <-cbind(dummy_position3_1,fifa3_1_model)
+fifa3_2_model <-cbind(dummy_position3_2,fifa3_2_model)
+fifa3_3_model <-cbind(dummy_position3_3,fifa3_3_model)
+fifa2_1_model <-cbind(dummy_position2_1,fifa2_1_model)
+fifa2_2_model <-cbind(dummy_position2_2,fifa2_2_model)
+fifa3 <-cbind(dummy_position3,fifa3)
+fifa2 <-cbind(dummy_position2,fifa2)
+```
+
+factor those dummy variables
+```{r}
+factorcolumn <- function(x){
+  x[,which(names(x)%in%c('DEF','FWD','MID','GK'))] <- lapply(x[,which(names(x)%in%c('DEF','FWD','MID','GK'))],as.factor)
+  return (x)
+}
+fifa3_1_model <-factorcolumn(fifa3_1_model)
+fifa3_2_model <-factorcolumn(fifa3_2_model)
+fifa3_3_model <-factorcolumn(fifa3_3_model)
+fifa2_1_model <-factorcolumn(fifa2_1_model)
+fifa2_2_model <-factorcolumn(fifa2_2_model)
+fifa2 <- factorcolumn(fifa2)
+fifa3 <- factorcolumn(fifa3)
+```
+
+train-test split
+```{r}
+#Train-test split use the largest data set as example
+# Three clusters dataset 1
+set.seed(200)
+split3 = sample(1:nrow(fifa3_1_model), nrow(fifa3_1_model)*0.75)
+fifa3_1_model_train = fifa3_1_model[split3,]
+fifa3_1_model_test = fifa3_1_model[-split3,]
+#Three clusters dataset 2
+set.seed(200)
+split3 = sample(1:nrow(fifa3_2_model), nrow(fifa3_2_model)*0.75)
+fifa3_2_model_train = fifa3_2_model[split3,]
+fifa3_2_model_test = fifa3_2_model[-split3,]
+#Three clusters dataset 3
+set.seed(200)
+split3 = sample(1:nrow(fifa3_3_model), nrow(fifa3_3_model)*0.75)
+fifa3_3_model_train = fifa3_3_model[split3,]
+fifa3_3_model_test = fifa3_3_model[-split3,]
+#Total
+set.seed(200)
+split3 = sample(1:nrow(fifa3model), nrow(fifa3model)*0.75)
+fifa3_model_train = fifa3model[split3,]
+fifa3_model_test = fifa3model[-split3,]
+
+# TWo clusters dataset 1
+set.seed(200)
+split2 = sample(1:nrow(fifa2_1_model), nrow(fifa2_1_model)*0.75)
+fifa2_1_model_train = fifa2_1_model[split3,]
+fifa2_1_model_test = fifa2_1_model[-split3,]
+
+# TWo clusters dataset 2
+set.seed(200)
+split2 = sample(1:nrow(fifa2_2_model), nrow(fifa2_2_model)*0.75)
+fifa2_2_model_train = fifa2_2_model[split3,]
+fifa3_2_model_test = fifa3_2_model[-split3,]
+
+#Total
+set.seed(200)
+split2 = sample(1:nrow(fifa2model), nrow(fifa2model)*0.75)
+fifa2_model_train = fifa2model[split3,]
+fifa2_model_test = fifa2model[-split3,]
+```
+
+##Build Random Forest model
+```{r}
+library(ranger)
+#build model
+#Three clusters
+set.seed(100)
+forest3 = ranger(PositionGroup~.-DEF-FWD-MID,data=fifa3_model_train,num.tree = 1000,mtry = 9,classification = True)
+#Two clusters
+set.seed(100)
+forest2 = ranger(PositionGroup~.-DEF-FWD-MID,data=fifa2_model_train,num.tree = 1000,mtry = 9,classification = True)
+
+#predict
+#Three Clusters
+predForest3 = predict(forest3,data=fifa3_model_test)
+#Two Clusters
+predForest2 = predict(forest2,data=fifa2_model_test)
+
+#Compare accuracy
+#Three Clusters
+sum(predForest3$prediction ==fifa3_model_test$PositionGroup)/nrow(fifa3_model_test)
+#Two Clusters
+sum(predForest2$prediction ==fifa2_model_test$PositionGroup)/nrow(fifa2_model_test)
+```
+
+## To unlock which skill sets are important when predicting Position DEF
+```{r}
+set.seed(100)
+rg.forest3<- ranger(PositionGroup~.-DEF-FWD-MID,data=fifa3_model_train, importance = "impurity")
+head(sort(rg.forest3$variable.importance,decreasing = TRUE),10)
+```
+
+##Draw importance purity plot
+```{r}
+barplot(head(sort(rg.forest3$variable.importance,decreasing = TRUE),10),cex.names = 0.5)
+```
+
+## Draw box plot about position and skill set
+SlidingTackle
+```{r}
+library(dplyr)
+library(ggplot2)
+fifa2_1 %>%
+  filter(PositionGroup != "Unknown") %>%
+  ggplot(aes(x= PositionGroup, y=SlidingTackle )) +
+  geom_boxplot(fill = "darkgrey") +
+  ggtitle("SlidingTackle skill and Position", subtitle = "") 
+
+```
+
+StandingTackle
+```{r}
+library(ggplot2)
+fifa3_1 %>%
+  filter(PositionGroup != "Unknown") %>%
+  ggplot(aes(x= PositionGroup, y=StandingTackle )) +
+  geom_boxplot(fill = "darkgrey") +
+  ggtitle("StandingTackle and Position", subtitle = "") 
+```
+
+Finishing
+```{r}
+fifa2_1 %>%
+  filter(PositionGroup != "Unknown") %>%
+  ggplot(aes(x= PositionGroup, y=Finishing )) +
+  geom_boxplot(fill = "darkgrey") +
+  ggtitle("Finishing skill and Position", subtitle = "") 
+```
+
+Vision
+```{r}
+fifa3_1 %>%
+  filter(PositionGroup != "Unknown") %>%
+  ggplot(aes(x= PositionGroup, y=Vision )) +
+  geom_boxplot(fill = "darkgrey") +
+  ggtitle("Vision and Position", subtitle = "") 
+```
+
+Interceptions
+```{r}
+fifa3_1 %>%
+  filter(PositionGroup != "Unknown") %>%
+  ggplot(aes(x= PositionGroup, y=Interceptions )) +
+  geom_boxplot(fill = "darkgrey") +
+  ggtitle("Interceptions and Position", subtitle = "") 
+```
+
+HeadingAccuracy
+```{r}
+fifa3_1 %>%
+  filter(PositionGroup != "Unknown") %>%
+  ggplot(aes(x= PositionGroup, y=HeadingAccuracy )) +
+  geom_boxplot(fill = "darkgrey") +
+  ggtitle("HeadingAccuracy and Position", subtitle = "") 
+```
+
+
+#Replacement Recommendation
+```{r}
+FWD_play <- fifa2[fifa2$FWD == 1,]
+DEF_play <- fifa2[fifa2$DEF == 1,]
+MID_play <- fifa2[fifa2$MID== 1,]
+```
+
+##Build replacment function
+Utilize random forest results to build core-skill list 
+```{r}
+MID_skillset = c('HeadingAccuracy','Vision','LongPassing','SlidingTackle','Finishing','Crossing','RB','LB','ShortPassing','SprintSpeed')
+FWD_skillset = c('SlidingTackle','StandingTackle','Interceptions','HeadingAccuracy','Finishing','RB','Marking','LB','LongPassing','CDM')
+DEF_skillset = c('SlidingTackle','Finishing','StandingTackle','Vision','RCB','Interceptions','LB','RB','Marking','LCB')
+distinctive_skill = c('SlidingTackle','Finishing','RB','LB')
+```
+
+put name and ID back to data set
+```{r}
+fifa2 = cbind(fifa[,c('ID','Name')],fifa2)
+```
+
+divide the data set by players' position
+```{r}
+FWD_play <- fifa2[fifa2$FWD == 1,]
+DEF_play <- fifa2[fifa2$DEF == 1,]
+MID_play <- fifa2[fifa2$MID== 1,]
+```
+
+##Build function
+In this fucntion, you can input your targeted player and your budget, and we will find the best player for your team.
+```{r}
+findsimilarplayer <- function(x,y){
+  similarity_list = data.frame()
+  if (x %in% FWD_play$ID){
+  x<- FWD_play[FWD_play$ID==x,]
+    for(row in 1:nrow(FWD_play)){
+      i<-FWD_play[row,]
+      e<-rbind(i,x)
+      f<-dist(e[,FWD_skillset],method = 'euclidean')
+      g<-as.matrix(f)
+      ID = i$ID
+      name = i$Name
+      value = i$Value
+      similarity_diatance = g[1,2]
+      Potential = i$Potential
+      similarity_list = rbind(similarity_list,data.frame(ID,name,value,similarity_diatance,Potential)) 
+    }
+  
+  }else if(x %in% DEF_play$ID){
+  x<- DEF_play[DEF_play$ID==x,]
+    for(row in 1:nrow(DEF_play)){
+      i<-DEF_play[row,]
+      e<-rbind(i,x)
+      f<-dist(e[,DEF_skillset],method = 'euclidean')
+      g<-as.matrix(f)
+      ID = i$ID
+      name = i$Name
+      value = i$Value
+      similarity_diatance = g[1,2]
+      Potential = i$Potential
+      similarity_list = rbind(similarity_list,data.frame(ID,name,value,similarity_diatance,Potential)) 
+    }
+  }else if(x %in% MID_play$ID){
+    x<- MID_play[MID_play$ID==x,]
+    for(row in 1:nrow(MID_play)){
+      i<-MID_play[row,]
+      e<-rbind(i,x)
+      f<-dist(e[,MID_skillset],method = 'euclidean')
+      g<-as.matrix(f)
+      ID = i$ID
+      name = i$Name
+      value = i$Value
+      similarity_diatance = g[1,2]
+      Potential = i$Potential
+      similarity_list = rbind(similarity_list,data.frame(ID,name,value,similarity_diatance,Potential)) 
+  }
+
+}
+result <- similarity_list[similarity_list$value<y,]
+result <- arrange(result,similarity_diatance)
+print(head(result))
+}
+```
+
+
+Here is the example. We need a player who plays like Messi(ID:158023), but we only have 57000 dollars,which is far lower than Messi's value- 110500 dollars. Who should we buy for our team?
+```{r}
+findsimilarplayer(158023,57000)
+```
+It seems like M.Depay is our Guy!
+
+
+
+
+
+
+
+
+
+
+
+

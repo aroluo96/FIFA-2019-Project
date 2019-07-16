@@ -1,0 +1,187 @@
+---
+title: "fifa"
+author: "Zhijun LIu"
+date: "2019/3/5"
+output:
+  html_document: default
+---
+## Read data
+```{r}
+fifa = read.csv('data.csv',stringsAsFactors = F)
+```
+## Drop the useless variables
+```{r}
+fifa2 = fifa[,-which(names(fifa)%in%c('Photo','Flag','Club.Logo','Loaned.From','X'))]
+```
+
+```{r}
+col<-colnames(fifa)
+which(fifa2$Age %in% max(fifa2$Age))
+```
+
+```{r}
+median(fifa2$Age)
+```
+
+
+## Covert Value, Wage and Release.clause into numeric variables and the default unit is 1000€
+```{r}
+library(stringr)
+
+fifa2$valueNum = as.numeric(str_sub(fifa2$Value, 2, -2))
+fifa2$valueScale = str_sub(fifa2$Value,-1,-1)
+for (i in 1:length(fifa2$Value)){
+  if(fifa2$valueScale[i] == 'M'){fifa2$Value[i] =  fifa2$valueNum[i]*1000}
+  else if(fifa2$valueScale[i] == 'K'){fifa2$Value[i] =  fifa2$valueNum[i]}
+  else {fifa2$Value[i] =  fifa2$valueNum[i]/100}
+}
+
+fifa2$wageNum = as.numeric(str_sub(fifa2$Wage, 2, -2))
+fifa2$wageScale = str_sub(fifa2$Wage,-1,-1)
+for (i in 1:length(fifa2$Wage)){
+  if(fifa2$wageScale[i] == 'M'){fifa2$Wage[i] =  fifa2$wageNum[i]*1000}
+  else if(fifa2$wageScale[i] == 'K'){fifa2$Wage[i] =  fifa2$wageNum[i]}
+  else {fifa2$Wage[i] =  fifa2$wageNum[i]/100}
+}
+fifa2$Release.ClauseNum = as.numeric(str_sub(fifa2$Release.Clause, 2, -2))
+fifa2$Release.ClauseScale = str_sub(fifa2$Release.Clause,-1,-1)
+for (i in 1:length(fifa2$Release.Clause)){
+  if(fifa2$Release.ClauseScale[i] == 'M'){fifa2$Release.Clause[i] =  fifa2$Release.ClauseNum[i]*1000}
+  else if(fifa2$Release.ClauseScale[i] == 'K'){fifa2$Release.Clause[i] =  fifa2$Release.ClauseNum[i]}
+  else{fifa2$Release.Clause[i] =  fifa2$Release.ClauseNum[i]/100}
+}
+
+fifa2 = fifa2[,-which(names(fifa2)%in%c('valueScale','valueNum','wageScale','wageNum','Release.ClauseNum','Release.ClauseScale'))]
+```
+## Split Work.Rate into attack_work_rate and defend_work_rate
+```{r}
+fifa2$attack_Work.Rate<-gsub('[:/:][: :][:A-Z:][:a-z:]+','',fifa2$Work.Rate)
+fifa2$defend_Work.Rate<-gsub('[:A-Z:][:a-z:]+[:/:][: :]','',fifa2$Work.Rate)
+fifa2 = fifa2[,-which(names(fifa2)%in%c('Work.Rate'))]
+```
+## Recalculate the height and set the default unit as cm
+#### Height(cm)=30.48*feet + 2.54*inch 
+```{r}
+fifa2$height_feet<-as.numeric(gsub("[:':][:0-9:]+",'',fifa2$Height))
+fifa2$height_inch<-as.numeric(gsub("[:0-9:]+[:':]",'',fifa2$Height))
+fifa2$Height = fifa2$height_feet*30.48+fifa2$height_inch*2.54
+fifa2 = fifa2[,-which(names(fifa2)%in%c('height_feet','height_inch'))]
+```
+
+## Turn the weight(lbs) into numeric variable and its unit is lbs.
+```{r}
+fifa2$Weight = as.numeric(str_sub(fifa2$Weight,1,-4))
+```
+
+## Change the data type of Joined into date type
+#### For example: turn 'Jul 1, 2004' into '2004-07-01'
+```{r}
+fifa2$Joined <- gsub("Jan",'1',fifa2$Joined)
+fifa2$Joined <- gsub("Feb",'2',fifa2$Joined)
+fifa2$Joined <- gsub("Mar",'3',fifa2$Joined)
+fifa2$Joined <- gsub("Apr",'4',fifa2$Joined)
+fifa2$Joined <- gsub("May",'5',fifa2$Joined)
+fifa2$Joined <- gsub("Jun",'6',fifa2$Joined)
+fifa2$Joined <- gsub("Jul",'7',fifa2$Joined)
+fifa2$Joined <- gsub("Aug",'8',fifa2$Joined)
+fifa2$Joined <- gsub("Sep",'9',fifa2$Joined)
+fifa2$Joined <- gsub("Oct",'10',fifa2$Joined)
+fifa2$Joined <- gsub("Nov",'11',fifa2$Joined)
+fifa2$Joined <- gsub("Dec",'12',fifa2$Joined)
+fifa2$Joined <- as.Date(fifa2$Joined,format = '%m %d, %Y')
+```
+
+## Separate each player's personal rating from total rating and convert the data type into numeric type
+```{r}
+fifa2$personal_rating<- as.numeric(gsub("[:0-9:]+[:+:]",'',fifa2$LS))
+fifa2$LS <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LS))+fifa2$personal_rating
+fifa2$ST <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$ST))+fifa2$personal_rating
+fifa2$RS <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RS))+fifa2$personal_rating
+fifa2$LW <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LW))+fifa2$personal_rating
+fifa2$LF <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LF))+fifa2$personal_rating
+fifa2$CF <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$CF))+fifa2$personal_rating
+fifa2$RF <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RF))+fifa2$personal_rating
+fifa2$RW <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RW))+fifa2$personal_rating
+fifa2$LAM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LAM))+fifa2$personal_rating
+fifa2$CAM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$CAM))+fifa2$personal_rating
+fifa2$RAM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RAM))+fifa2$personal_rating
+fifa2$LM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LM))+fifa2$personal_rating
+fifa2$LCM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LCM))+fifa2$personal_rating
+fifa2$CM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$CM))+fifa2$personal_rating
+fifa2$RCM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RCM))+fifa2$personal_rating
+fifa2$RM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RM))+fifa2$personal_rating
+fifa2$LWB <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LWB))+fifa2$personal_rating
+fifa2$LDM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LDM))+fifa2$personal_rating
+fifa2$CDM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$CDM))+fifa2$personal_rating
+fifa2$RDM <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RDM))+fifa2$personal_rating
+fifa2$RWB <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RWB))+fifa2$personal_rating
+fifa2$LB <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LB))+fifa2$personal_rating
+fifa2$LCB <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$LCB))+fifa2$personal_rating
+fifa2$CB <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$CB))+fifa2$personal_rating
+fifa2$RCB <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RCB))+fifa2$personal_rating
+fifa2$RB <-as.numeric(gsub("[:+:][:0-9:]+",'',fifa2$RB))+fifa2$personal_rating
+fifa2 = fifa2[,-which(names(fifa2)%in%c('personal_rating'))]
+```
+
+## turn Jun 30, 2019 to 2019
+```{r}
+fifa$Contract.Valid.Until <- gsub('[:A-Z:][:a-z:]+[: :][:0-9:]+[:,:]','',fifa$Contract.Valid.Until)
+```
+
+## Data type
+```{r}
+fifa2$Nationality = as.factor(fifa2$Nationality)
+fifa2$Club = as.factor(fifa2$Club)
+fifa2$Preferred.Foot = as.factor(fifa2$Preferred.Foot)
+fifa2$Real.Face = as.factor(fifa2$Real.Face)
+fifa2$Position = as.factor(fifa2$Position)
+fifa2$attack_Work.Rate = as.factor(fifa2$attack_Work.Rate)
+fifa2$defend_Work.Rate = as.factor(fifa2$defend_Work.Rate)
+
+fifa2$Value = as.numeric(fifa2$Value)
+fifa2$Wage = as.numeric(fifa2$Wage)
+fifa2$Release.Clause = as.numeric(fifa2$Release.Clause)
+
+```
+
+```{r}
+fifa2$Body.Type <- gsub("Akinfenwa",'Stocky',fifa2$Body.Type)
+fifa2$Body.Type <- gsub("C. Ronaldo",'Stocky',fifa2$Body.Type)
+fifa2$Body.Type <- gsub("Messi",'Normal',fifa2$Body.Type)
+fifa2$Body.Type <- gsub("Neymar",'Normal',fifa2$Body.Type)
+fifa2$Body.Type <- gsub("PLAYER_BODY_TYPE_25",'Normal',fifa2$Body.Type)
+fifa2$Body.Type <- gsub("Shaqiri",'Stocky',fifa2$Body.Type)
+fifa2$Body.Type <- gsub("Courtois",'Lean',fifa2$Body.Type)
+```
+
+## Check missing data
+```{r}
+sapply(X = 1:85, FUN = function(i) {sum(is.na(fifa2[i]))})
+```
+## Delete missing data
+```{r}
+library(dplyr)
+#fifa2=fifa2%>%filter(is.na(LB)==FALSE)
+fifa2=fifa2%>%filter(is.na(Joined)==FALSE)
+fifa2=fifa2%>%filter(is.na(Release.Clause)==FALSE)
+```
+## Reset the level of Body.Type
+#### convert the typical ones into 'Normal'
+```{r}
+summary(as.factor(fifa2$Body.Type))
+```
+
+```{r}
+fifa2[is.na(fifa2)] = 0
+```
+## Check missing values
+```{r}
+fifa2
+```
+
+```{r}
+write.csv(fifa2, 'fifa.csv',row.names = F)
+```
+
+
+
